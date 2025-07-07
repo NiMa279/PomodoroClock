@@ -1,0 +1,326 @@
+ <!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+    <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    />
+    <title>PomodoroClock</title>
+<style>
+
+body, html {
+  height: 100vh;
+  margin: 0;
+  font-family: "Didot", 'Times New Roman', Times, serif;
+  background: rgb(208, 179, 255);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+
+#wholeClock {
+  position: relative;
+  width: 90vw;
+  max-width: 600px;
+  aspect-ratio: 1/1; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+}
+
+#middleRing, #outerRing, #timerRing, #clockField{
+  position: absolute;
+  border-radius: 50%;
+}
+
+#outerRing {
+  width: 100%;
+  height: 100%;
+  background: #f0e8dd;
+  z-index: 0;
+}
+
+#middleRing {
+  width: 93.75%;;
+  height: 93.75%;
+  background: rgb(208, 179, 255);
+  z-index: 2;
+}
+
+#timerRing {
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(rgb(88, 27, 110) 0%, transparent 0%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
+
+#clockField {
+  width: 75%;
+  height: 75%;
+  background: #f0e8dd;
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  font-size: xx-large;
+}
+
+.vertical {
+  display:flex;
+  justify-content: center;  
+  align-items: center;
+  gap: 20px;
+}
+
+.horizontal{
+   display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+button {
+  height:50px;
+  width:50px; 
+  display:flex;
+  justify-content: center;  /* horizontal */ 
+  align-items: center;
+  background-color: rgb(208, 179, 255);
+  border-color: rgb(27, 27, 70);
+  border-width: 1px;
+  font-size:x-large;
+  font-weight:bold;
+  border-radius: 50%;
+}
+
+#timeChooseMenu {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 5% 0 10% 0;
+  gap: 20px;
+}
+
+h1 {
+  text-align:center;
+}
+
+#break-length, #time-left, #session-length {
+  width:2vw;
+  padding: 0, 10%;
+  display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+    </style>
+    
+    </head>
+    <body>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+     <script type="text/babel">
+
+
+class Clock extends React.Component {
+  
+  constructor(props) {
+    super(props);
+    this.state = { breakL: 5, sessionL: 25, timeLeft: "25:00", label:"Session" };
+    this.handleClick = this.handleClick.bind(this);
+    this.timer = null; 
+  }
+
+   componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+
+  handleClick(e) {
+   const decider = e.currentTarget.id;
+   const lengthBreak = this.state.breakL;
+   const lengthSession = this.state.sessionL;
+   const audio = document.getElementById("beep");
+
+  switch (decider) {
+    
+    case "start_stop":
+    if (this.timer) {
+    clearInterval(this.timer);  // Stop
+    this.timer = null;
+    } else {
+      this.startCountdown();      // Start
+    }
+    audio.pause();
+    audio.currentTime = 0;
+    break;
+
+
+  case "reset":
+    clearInterval(this.timer);
+    this.setState({ breakL: 5, sessionL: 25, timeLeft: "25:00", label:"Session" });
+    
+    audio.pause();
+    audio.currentTime = 0;
+    const ring= document.getElementById('timerRing');
+    ring.style.background = `conic-gradient(rgb(88, 27, 110) 0%, transparent 0%)`
+    break;
+
+    case "break-decrement":
+    if (lengthBreak > 1) {
+      this.setState({ breakL: lengthBreak - 1 });
+    }
+    break;
+
+  case "break-increment":
+    if (lengthBreak < 60) {
+      this.setState({ breakL: lengthBreak + 1 });
+    }
+    break;
+
+  case "session-decrement":
+    if (lengthSession > 1) {
+      this.setState(
+        { sessionL: lengthSession - 1 },
+        () => {
+          const min = this.state.sessionL.toString().padStart(2, "0");
+          this.setState({ timeLeft: `${min}:00` });
+        }
+      );
+    }
+    break;
+
+  case "session-increment":
+    if (lengthSession < 60) {
+      this.setState(
+        { sessionL: lengthSession + 1 },
+        () => {
+          const min = this.state.sessionL.toString().padStart(2, "0");
+          this.setState({ timeLeft: `${min}:00` });
+        }
+      );
+    }
+    break;
+
+    
+  }
+}
+
+  startCountdown() {
+  this.timer = setInterval(() => {
+    // aktuelle Restzeit in Sekunden berechnen
+    const [m, s] = this.state.timeLeft.split(":").map(Number);
+    let totalSec = m * 60 + s;
+    const ogSec = this.state.label === "Break"?this.state.breakL*60:this.state.sessionL*60;
+    const progress= ((ogSec-totalSec)/ogSec)*100;
+    const ring = document.getElementById("timerRing");
+    
+
+    // === 0 ➜ Phase wechseln
+    if (totalSec === 0) {
+      const nextIsSession = this.state.label === "Break"; // gerade Break? => als nächstes Session
+      const nextMinutes   = nextIsSession ? this.state.sessionL : this.state.breakL;
+      const nextLabel     = nextIsSession ? "Session"        : "Break";
+
+      totalSec = nextMinutes * 60;           // neuen Countdown setzen
+      this.setState({ label: nextLabel });   // Label umschalten
+      document.getElementById("beep").play();
+      
+    } else {
+      totalSec -= 1; // eine Sekunde runterzählen
+    }
+
+    // Sekunden zurück in "mm:ss" formatieren
+    const mm = Math.floor(totalSec / 60).toString().padStart(2, "0");
+    const ss = (totalSec % 60).toString().padStart(2, "0");
+    this.setState({ timeLeft: `${mm}:${ss}` });
+
+    //Timer-Kreis:
+    ring.style.background = `conic-gradient(rgb(88, 27, 110) ${progress}%, transparent ${progress}%)`;
+      
+
+  }, 1000);
+}
+
+  render() {
+    return (
+      <div className="clockField">
+        <ClockElements onClick={this.handleClick} valueObj={this.state} />
+      </div>
+    );
+  }
+}
+  
+
+function ClockElements({onClick,valueObj}) {
+  return (
+    
+    <div className="clockField">
+<div>
+<h1>Pomodoro Clock</h1>
+</div>
+<div id="timeChooseMenu">
+  <div id="break" className="horizontal" >
+    <div id="break-label" >Break Length</div>
+    <div className="vertical">
+      <button id="break-decrement" onClick={onClick} value="1"><i className="bi bi-arrow-down-circle fs-1"></i></button>
+      <div id="break-length">{valueObj.breakL}</div>
+      <button id="break-increment" onClick={onClick} value="2"><i className="bi bi-arrow-up-circle fs-1"></i></button>
+    </div>
+  </div>
+  <div id="session" className="horizontal">
+    <div id="session-label" >Session Length</div>
+    <div className="vertical">
+      <button id="session-decrement" onClick={onClick} value="3"><i className="bi bi-arrow-down-circle fs-1"></i></button>
+      <div id="session-length">{valueObj.sessionL}</div>
+      <button id="session-increment" onClick={onClick} value="4"><i className="bi bi-arrow-up-circle fs-1"></i></button>
+    </div>
+  </div>
+</div>
+<div id="timer" className="horizontal" >
+  <div id="timer-label">{valueObj.label}</div>
+  <div id="time-left">{valueObj.timeLeft}</div>
+  <div className="vertical">
+    <button id="start_stop" onClick={onClick}><i className="bi bi-play-fill"></i><i className="bi bi-pause-fill"></i></button>
+    <button id="reset" onClick={onClick}><i className="bi bi-repeat fs-1"></i></button>
+    <audio id="beep" src="mixkit-marimba-waiting-ringtone-1360.wav" preload="auto"></audio>
+  </div>
+</div>
+</div>
+  );
+}
+
+
+ const root = ReactDOM.createRoot(document.getElementById('clockField'));
+    root.render(<Clock />);
+
+  </script>
+ 
+  <div id="wholeClock">
+  <div id="outerRing"></div>
+  <div id="middleRing"></div>
+  <div id="timerRing"></div>
+  <div id="clockField"></div>
+  
+  </div>
+
+ <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+</body>
+</html>
